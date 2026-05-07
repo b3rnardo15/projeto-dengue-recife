@@ -145,7 +145,7 @@ MIT License
 
 ## Autores
 
------- depois coloco nome de todos
+------ depois coloco nome de todoss
 
 ## Contato
 
