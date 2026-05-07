@@ -55,10 +55,6 @@ models/*.joblib
 *.pkl
 *.joblib
 
-# Outputs
-outputs/*.png
-outputs/*.jpg
-outputs/*.pdf
 
 # Environment variables
 .env
