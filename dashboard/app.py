@@ -103,5 +103,5 @@ st.markdown("---")
 st.markdown("""
 **Fonte dos dados:** Portal de Dados Abertos da Prefeitura do Recife | INMET  
 **Modelo:** Ridge Regression (MAE: 10.86, R²: 0.629)  
-**Desenvolvido por:** Bernardo Simões
+**Desenvolvido por:** BioLens
 """)
