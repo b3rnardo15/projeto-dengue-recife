@@ -12,25 +12,41 @@ Este projeto foi desenvolvido para fornecer subsídios a órgãos de saúde púb
 - Feature engineering temporal com lags e médias móveis
 - Modelo de regressão Ridge com validação temporal
 - Métricas: MAE de 10.86 casos/dia e R² de 0.629
+- API REST com FastAPI e MongoDB Atlas
 
 ## Estrutura do Projeto
 
 ```
 projeto-dengue-recife/
+├── api/                      # API FastAPI
+│   ├── routers/
+│   │   ├── historico.py     # Endpoints de consulta histórica
+│   │   └── predict.py       # Endpoints de predição
+│   ├── database.py          # Configuração MongoDB
+│   ├── main.py              # Aplicação principal
+│   └── models.py            # Schemas Pydantic
 ├── data/
-│   ├── raw/                  # Dados brutos (não versionados)
-│   └── processed/            # Dados processados
-├── models/                   # Modelos treinados (.pkl)
-├── scripts/                  # Pipeline de processamento
-├── api/                      # FastAPI endpoints
-├── outputs/                  # Gráficos e relatórios
+│   ├── raw/                 # Dados brutos (não versionados)
+│   └── processed/           # Dados processados
+├── models/                  # Modelos treinados (.pkl)
+├── notebooks/               # Análises exploratórias
+├── scripts/                 # Pipeline de processamento
+│   ├── 01_processar_casos_dengue.py
+│   ├── 02_processar_clima_inmet.py
+│   ├── 03_integrar_dados.py
+│   ├── 04_treinar_modelo.py
+│   └── 05_inserir_historico_mongodb.py
+├── outputs/                 # Gráficos e relatórios
+├── .env                     # Variáveis de ambiente (não versionado)
+├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
 
 ## Requisitos
 
-- Python 3.9+
+- Python 3.10+
+- MongoDB Atlas (ou instância local)
 - Bibliotecas listadas em `requirements.txt`
 
 ## Instalação
@@ -40,42 +56,81 @@ git clone https://github.com/seu-usuario/projeto-dengue-recife.git
 cd projeto-dengue-recife
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
+venv\\Scripts\\activate     # Windows
 pip install -r requirements.txt
+```
+
+## Configuração
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/dengue_recife
+DATABASE_NAME=dengue_recife
 ```
 
 ## Uso
 
-### 1. Coleta de Dados
+### 1. Pipeline de Dados
 
 ```bash
-python scripts/01_consolidar_dados_dengue.py
-python scripts/02_baixar_dados_clima_inmet.py
+python scripts/01_processar_casos_dengue.py
+python scripts/02_processar_clima_inmet.py
+python scripts/03_integrar_dados.py
 ```
 
-### 2. Processamento
+### 2. Treinamento do Modelo
 
 ```bash
-python scripts/03_analise_exploratoria.py
-python scripts/04_integracao_dados.py
-```
-
-### 3. Treinamento do Modelo
-
-```bash
-python scripts/05_treinar_modelo.py
+python scripts/04_treinar_modelo.py
 ```
 
 O modelo treinado será salvo em `models/modelo_dengue_emprel_producao.pkl`
 
-### 4. Predição (API)
+### 3. Carga de Dados Históricos
 
 ```bash
-cd api
-uvicorn main:app --reload
+python scripts/05_inserir_historico_mongodb.py
+```
+
+### 4. Executar API
+
+```bash
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Acesse a documentação interativa em `http://localhost:8000/docs`
+
+## API Endpoints
+
+### Health Check
+```http
+GET /health
+```
+
+### Fazer Predição
+```http
+POST /api/v1/predict
+Content-Type: application/json
+
+{
+  "precipitacao_mm": 25.5,
+  "temp_media_c": 27.3,
+  "umidade_media": 75.0,
+  "ano": 2026,
+  "semana": 20
+}
+```
+
+### Consultar Histórico
+```http
+GET /api/v1/historico?ano=2025&semana=1
+```
+
+### Listar Predições
+```http
+GET /api/v1/predicoes?limite=10
+```
 
 ## Fontes de Dados
 
@@ -103,6 +158,7 @@ Acesse a documentação interativa em `http://localhost:8000/docs`
 Ridge Regression (regressão linear regularizada)
 - Alpha: 10.0
 - MAE em validação cruzada: 12.49 casos/dia
+- MAE no conjunto de teste: 10.86 casos/dia
 - R² no conjunto de teste: 0.629
 
 ## Stack Tecnológica
@@ -113,7 +169,7 @@ Ridge Regression (regressão linear regularizada)
 | Processamento | Pandas, NumPy | Manipulação eficiente de séries temporais |
 | ML | Scikit-learn | Modelos robustos para dados tabulares |
 | Visualização | Matplotlib, Seaborn | Gráficos de alta qualidade |
-| Banco de Dados | PostgreSQL | Armazenamento de dados históricos e logs de predição |
+| Banco de Dados | MongoDB Atlas | Armazenamento NoSQL escalável e flexível |
 
 ## Roadmap
 
@@ -122,9 +178,10 @@ Ridge Regression (regressão linear regularizada)
 - Limpeza e tratamento de valores nulos
 - Análise exploratória de dados
 
-### Fase 2: Inteligência e Backend (Em Progresso)
+### Fase 2: Inteligência e Backend (Concluída)
 - Treinamento e validação de modelos
 - Desenvolvimento da API FastAPI
+- Integração com MongoDB Atlas
 - Persistência de resultados
 
 ### Fase 3: Frontend e Deploy (Planejada)
@@ -145,7 +202,7 @@ MIT License
 
 ## Autores
 
------- depois coloco nome de todoss
+------ depois coloco nome de todos
 
 ## Contato
 
