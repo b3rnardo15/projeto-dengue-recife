@@ -1,70 +1,40 @@
+import requests
+from bs4 import BeautifulSoup
 import pandas as pd
-import zipfile
+import os
 from pathlib import Path
 
+print("DOWNLOAD DE DADOS CLIMATICOS - INMET\n")
 
-print("SCRIPT 2D: EXTRAÇÃO DE DADOS CLIMÁTICOS DE RECIFE")
+Path('data/raw').mkdir(parents=True, exist_ok=True)
+Path('data/processed').mkdir(parents=True, exist_ok=True)
 
+ESTACAO_RECIFE = "A301"
+anos = [2020, 2021, 2022, 2023, 2024, 2025]
 
-zips_encontrados = sorted(Path('.').glob('*.zip'))
+print(f"Estacao: {ESTACAO_RECIFE} (Recife - PE)")
+print(f"Anos: {anos[0]} a {anos[-1]}\n")
 
-print(f"\n Encontrados {len(zips_encontrados)} arquivo(s) ZIP\n")
+dados_clima = []
 
-df_clima_recife = pd.DataFrame()
+for ano in anos:
+    url = f"https://portal.inmet.gov.br/uploads/dadoshistoricos/{ano}.zip"
+    print(f"Baixando {ano}... ", end='')
 
-estacoes_recife = ['A301', '82900', 'RECIFE']
-
-for zip_file in zips_encontrados:
-    ano = str(zip_file).split('.')[0][-4:] if any(char.isdigit() for char in str(zip_file)) else "2025"
-    
-    print(f" Processando: {zip_file}")
-    
     try:
-        with zipfile.ZipFile(zip_file, 'r') as z:
-            arquivos_csv = [f for f in z.namelist() if f.upper().endswith('.CSV')]
-            
-            for arquivo in arquivos_csv:
-                nome_upper = arquivo.upper()
-                
-                if any(estacao in nome_upper for estacao in estacoes_recife):
-                    try:
-                        df_temp = pd.read_csv(
-                            z.open(arquivo), 
-                            sep=';', 
-                            encoding='latin1', 
-                            skiprows=8,
-                            decimal=',',
-                            on_bad_lines='skip'
-                        )
-                        
-                        df_temp['ARQUIVO_ORIGEM'] = arquivo
-                        df_temp['ANO_ORIGEM'] = ano
-                        df_clima_recife = pd.concat([df_clima_recife, df_temp], ignore_index=True)
-                        
-                        print(f"   {arquivo}: {len(df_temp)} registros")
-                    
-                    except Exception as e:
-                        print(f"   Erro: {e}")
-    
+        response = requests.get(url, timeout=30)
+        if response.status_code == 200:
+            arquivo_zip = f'data/raw/clima_{ano}.zip'
+            with open(arquivo_zip, 'wb') as f:
+                f.write(response.content)
+            print(f"OK ({len(response.content)/1024:.1f} KB)")
+        else:
+            print(f"ERRO (status {response.status_code})")
     except Exception as e:
-        print(f"   Erro ao abrir ZIP: {e}")
+        print(f"ERRO ({str(e)[:50]})")
 
-if len(df_clima_recife) > 0:
-
-    print(f" RECIFE: {len(df_clima_recife):,} registros climáticos")
-
-    
-    df_clima_recife.to_csv('dados_clima_recife_apenas.csv', index=False, encoding='utf-8')
-    print("\n Arquivo salvo: dados_clima_recife_apenas.csv")
-    
-    print("\nPeríodo dos dados:")
-    print(f"  De: {df_clima_recife['Data'].min()}")
-    print(f"  Até: {df_clima_recife['Data'].max()}")
-
-else:
-
-    print("  ESTAÇÃO DE RECIFE NÃO ENCONTRADA NO ZIP DE 2025")
-
-    print("\nVocê precisa baixar os ZIPs dos anos anteriores (2019-2024)")
-    print("ou usar os dados climatológicos médios.")
-    print("\n SOLUÇÃO: Vou criar dados sintéticos baseados nas outras estações de PE")
+print("\nExtracao e processamento concluidos")
+print("\nNOTA: Este script baixa os arquivos ZIP.")
+print("Voce precisa extrair manualmente e processar os CSVs da estacao A301.")
+print("\nProximo passo: consolidar os dados climaticos de Recife em:")
+print("data/processed/dados_clima_recife_apenas.csv")

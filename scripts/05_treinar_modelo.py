@@ -8,11 +8,15 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import joblib
 import warnings
+from pathlib import Path
 warnings.filterwarnings('ignore')
 
 print("MODELO DE PRODUCAO - VERSAO ROBUSTA PARA EMPREL\n")
 
-df = pd.read_csv('dataset_dengue_clima_integrado.csv', parse_dates=['DATA'])
+Path('models').mkdir(exist_ok=True)
+Path('outputs').mkdir(exist_ok=True)
+
+df = pd.read_csv('data/processed/dataset_dengue_clima_integrado.csv', parse_dates=['DATA'])
 df = df.sort_values('DATA').reset_index(drop=True)
 
 print("[1/4] Criando features conservadoras...")
@@ -76,28 +80,28 @@ tscv = TimeSeriesSplit(n_splits=3)
 
 for nome, modelo in modelos_config.items():
     print(f"\nTestando: {nome}")
-    
+
     mae_folds = []
     r2_folds = []
-    
+
     for fold, (train_idx, val_idx) in enumerate(tscv.split(X), 1):
         X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
         y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
-        
+
         modelo.fit(X_train, y_train)
         y_pred = modelo.predict(X_val)
-        
+
         mae = mean_absolute_error(y_val, y_pred)
         r2 = r2_score(y_val, y_pred)
-        
+
         mae_folds.append(mae)
         r2_folds.append(r2)
-    
+
     mae_medio = np.mean(mae_folds)
     r2_medio = np.mean(r2_folds)
-    
+
     print(f"  Validacao Cruzada: MAE={mae_medio:.2f} | R2={r2_medio:.3f}")
-    
+
     resultados.append({
         'modelo': nome,
         'mae': mae_medio,
@@ -148,9 +152,9 @@ joblib.dump({
         'rmse': rmse_test,
         'r2': r2_test
     }
-}, 'modelo_dengue_emprel_producao.pkl')
+}, 'models/modelo_dengue_emprel_producao.pkl')
 
-print("Modelo salvo: modelo_dengue_emprel_producao.pkl\n")
+print("Modelo salvo: models/modelo_dengue_emprel_producao.pkl\n")
 
 plt.figure(figsize=(14, 6))
 plt.plot(df_test['DATA'], y_test.values, label='Casos Reais', color='#2E86AB', linewidth=2, marker='o', markersize=4)
@@ -162,11 +166,9 @@ plt.title(f'Modelo de Producao - {melhor_nome}')
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('modelo_producao_emprel.png', dpi=150, bbox_inches='tight')
-print("Grafico salvo: modelo_producao_emprel.png\n")
+plt.savefig('outputs/modelo_producao_emprel.png', dpi=150, bbox_inches='tight')
+print("Grafico salvo: outputs/modelo_producao_emprel.png\n")
 
-
-print("MODELO PRONTO PARA APRESENTACAO PROFISSIONAL")
 
 print(f"\nModelo: {melhor_nome}")
 print(f"MAE (Validacao Cruzada): {df_resultados.iloc[0]['mae']:.2f} casos/dia")

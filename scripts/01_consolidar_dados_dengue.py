@@ -1,57 +1,60 @@
 import pandas as pd
-import numpy as np
-import warnings
-warnings.filterwarnings('ignore')
+from pathlib import Path
 
+print("CONSOLIDACAO DE DADOS DE DENGUE - RECIFE")
 
-print("SCRIPT 1: CONSOLIDAÇÃO DOS DADOS DE DENGUE (2019-2025)")
+raw_path = Path('data/raw')
+processed_path = Path('data/processed')
+processed_path.mkdir(parents=True, exist_ok=True)
 
+anos = [2019, 2020, 2021, 2022, 2023, 2024, 2025]
+dfs = []
 
-arquivos_dengue = [
-    'casos-de-dengue-2019.csv',
-    'casos-de-dengue-2020.csv',
-    'casos-de-dengue-2021.csv',
-    'casos-de-dengue-2022.csv',
-    'casos-de-dengue-2023.csv',
-    'casos-de-dengue-2024.csv',
-    'casos-de-dengue-2025.csv'
-]
+for ano in anos:
+    arquivo = raw_path / f'casos-de-dengue-{ano}.csv'
+    
+    if not arquivo.exists():
+        print(f"AVISO: Arquivo {arquivo} nao encontrado. Pulando...")
+        continue
+    
+    print(f"Lendo {arquivo.name}...")
+    
+    df_ano = pd.read_csv(
+        arquivo, 
+        sep=';',
+        encoding='latin1',
+        low_memory=False,
+        on_bad_lines='skip'
+    )
+    
+    if 'DT_NOTIFIC' not in df_ano.columns:
+        print(f"  ERRO: Coluna DT_NOTIFIC nao encontrada!")
+        continue
+    
+    df_ano['DATA'] = pd.to_datetime(df_ano['DT_NOTIFIC'], format='%d/%m/%Y', errors='coerce')
+    df_ano = df_ano.dropna(subset=['DATA'])
+    
+    df_ano['ANO'] = df_ano['DATA'].dt.year
+    df_ano['MES'] = df_ano['DATA'].dt.month
+    df_ano['SEMANA'] = df_ano['DATA'].dt.isocalendar().week
+    
+    df_filtrado = df_ano[['DATA', 'ANO', 'MES', 'SEMANA']].copy()
+    dfs.append(df_filtrado)
+    print(f"  -> {len(df_filtrado)} notificacoes processadas")
 
-df_consolidado = pd.DataFrame()
+if not dfs:
+    print("\nERRO: Nenhum arquivo processado!")
+    exit(1)
 
-for arquivo in arquivos_dengue:
-    try:
-        df_temp = pd.read_csv(arquivo, sep=';', encoding='utf-8', low_memory=False)
-        df_temp['ANO_ARQUIVO'] = arquivo.replace('casos-de-dengue-', '').replace('.csv', '')
-        df_consolidado = pd.concat([df_consolidado, df_temp], ignore_index=True)
-        print(f"✓ {arquivo}: {len(df_temp):,} registros carregados")
-    except Exception as e:
-        print(f"✗ Erro ao carregar {arquivo}: {str(e)}")
+df_consolidado = pd.concat(dfs, ignore_index=True)
+df_consolidado = df_consolidado.sort_values('DATA').reset_index(drop=True)
 
+casos_semana = df_consolidado.groupby(['ANO', 'SEMANA']).size().reset_index(name='CASOS')
 
-print(f"TOTAL DE REGISTROS CONSOLIDADOS: {len(df_consolidado):,}")
+output_file = processed_path / 'dengue_consolidado_2019_2025.csv'
+casos_semana.to_csv(output_file, index=False)
 
-
-colunas_essenciais = [
-    'NU_NOTIFIC', 'DT_NOTIFIC', 'DT_SIN_PRI', 'SEM_NOT', 'SEM_PRI', 'NU_ANO',
-    'ID_BAIRRO', 'NM_BAIRRO', 'ID_DISTRIT', 'CS_SEXO', 'NU_IDADE_N',
-    'CLASSI_FIN', 'CRITERIO', 'EVOLUCAO', 'HOSPITALIZ', 'ANO_ARQUIVO'
-]
-
-df_dengue_limpo = df_consolidado[colunas_essenciais].copy()
-
-df_dengue_limpo['DT_NOTIFIC'] = pd.to_datetime(df_dengue_limpo['DT_NOTIFIC'], format='%d/%m/%Y', errors='coerce')
-df_dengue_limpo['DT_SIN_PRI'] = pd.to_datetime(df_dengue_limpo['DT_SIN_PRI'], format='%d/%m/%Y', errors='coerce')
-
-df_dengue_limpo = df_dengue_limpo.sort_values('DT_NOTIFIC').reset_index(drop=True)
-
-df_dengue_limpo.to_csv('dengue_consolidado_2019_2025.csv', index=False, encoding='utf-8')
-print("\n✓ Arquivo salvo: dengue_consolidado_2019_2025.csv")
-
-
-print("RESUMO ESTATÍSTICO:")
-
-print(f"\nPeríodo: {df_dengue_limpo['DT_NOTIFIC'].min()} até {df_dengue_limpo['DT_NOTIFIC'].max()}")
-print(f"\nDistribuição por ano:")
-print(df_dengue_limpo.groupby('ANO_ARQUIVO').size())
-print(f"\nCasos confirmados (CLASSI_FIN = 10): {len(df_dengue_limpo[df_dengue_limpo['CLASSI_FIN'] == 10]):,}")
+print(f"\nArquivo salvo: {output_file}")
+print(f"Total de registros: {len(df_consolidado)}")
+print(f"Total de semanas: {len(casos_semana)}")
+print(f"Periodo: {df_consolidado['DATA'].min()} a {df_consolidado['DATA'].max()}")
