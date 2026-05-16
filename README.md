@@ -18,13 +18,17 @@ Este projeto foi desenvolvido para fornecer subsidios a orgaos de saude publica 
 
 ## Fluxo do Projeto
 
+```text
 DADOS BRUTOS → ETL → MODELO ML → API REST → FRONTEND
-↓ ↓ ↓ ↓
-SINAN MongoDB .pkl file JSON/HTTP
-INMET 8.4k+ Ridge FastAPI
-GeoJSON registros Regression
+↓              ↓     ↓           ↓
+SINAN          MongoDB .pkl file JSON/HTTP
+INMET          8.4k+   Ridge     FastAPI
+GeoJSON        registros Regression
+```
 
 ### Pipeline Detalhado
+
+```text
 EXTRACAO
 ├── Casos dengue (SINAN 2020-2025)
 ├── Dados clima (INMET)
@@ -48,37 +52,40 @@ CARGA
 
 API REST
 └── 10 endpoints funcionais
+```
 
 ## Estrutura do Projeto
 
+```text
 projeto-dengue-recife/
 ├── api/
-│ ├── main.py # API FastAPI (10 endpoints)
-│ ├── database.py # Conexao MongoDB
-│ └── models.py # Schemas Pydantic
+│   ├── main.py # API FastAPI (10 endpoints)
+│   ├── database.py # Conexao MongoDB
+│   └── models.py # Schemas Pydantic
 ├── data/
-│ ├── raw/ # Dados brutos (nao versionados)
-│ │ ├── casos-de-dengue-2020.csv ate 2025.csv
-│ │ ├── dados_clima_inmet_recife.csv
-│ │ └── clima_2020.zip ate 2024.zip
-│ └── processed/ # Dados processados (versionados)
-│ ├── dengue_consolidado_2019_2025.csv (30.633 registros)
-│ ├── casos_dengue_bairros_2020_2025.csv (8.402 registros)
-│ └── dados_integrados_dengue_clima.csv (157 semanas)
+│   ├── raw/ # Dados brutos (nao versionados)
+│   │   ├── casos-de-dengue-2020.csv ate 2025.csv
+│   │   ├── dados_clima_inmet_recife.csv
+│   │   └── clima_2020.zip ate 2024.zip
+│   └── processed/ # Dados processados (versionados)
+│       ├── dengue_consolidado_2019_2025.csv (30.633 registros)
+│       ├── casos_dengue_bairros_2020_2025.csv (8.402 registros)
+│       └── dados_integrados_dengue_clima.csv (157 semanas)
 ├── models/
-│ └── modelo_dengue_emprel_producao.pkl
+│   └── modelo_dengue_emprel_producao.pkl
 ├── scripts/ # Pipeline de processamento
-│ ├── 01_consolidar_dados_dengue.py
-│ ├── 04_integracao_dados.py
-│ ├── 05_treinar_modelo.py
-│ │ ├── converter_codigos_bairros.py
-│ ├── popular_mongodb_completo.py
-│ └── script-main.py # Executa pipeline completo
+│   ├── 01_consolidar_dados_dengue.py
+│   ├── 04_integracao_dados.py
+│   ├── 05_treinar_modelo.py
+│   ├── converter_codigos_bairros.py
+│   ├── popular_mongodb_completo.py
+│   └── script-main.py # Executa pipeline completo
 ├── outputs/ # Graficos e relatorios
 ├── .env # Variaveis de ambiente (nao versionado)
 ├── .gitignore
 ├── requirements.txt
 └── README.md
+```
 
 ## Requisitos
 
