@@ -1,15 +1,14 @@
-import joblib
-from pathlib import Path
+import pandas as pd
 
-MODEL_PATH = Path("models/modelo_dengue_emprel_producao.pkl")
+df = pd.read_csv('data/processed/casos_por_bairro_com_nomes.csv')
 
-print("Carregando modelo...")
-modelo = joblib.load(MODEL_PATH)
+df_final = df[['ANO', 'SEMANA', 'BAIRRO_NOME', 'CASOS']].copy()
+df_final.rename(columns={'BAIRRO_NOME': 'BAIRRO'}, inplace=True)
 
-print(f"Tipo do modelo: {type(modelo)}")
-print(f"Conteúdo: {modelo}")
+df_final.to_csv('data/processed/casos_dengue_bairros_2020_2025.csv', index=False)
 
-if isinstance(modelo, dict):
-    print("\nChaves do dicionário:")
-    for key in modelo.keys():
-        print(f"  - {key}: {type(modelo[key])}")
+print("✅ Dataset final pronto!")
+print(f"📁 Arquivo: data/processed/casos_dengue_bairros_2020_2025.csv")
+print(f"📊 Registros: {len(df_final)}")
+print(f"📅 Período: 2020-2025")
+print(f"🏘️ Bairros: {df_final['BAIRRO'].nunique()}")
